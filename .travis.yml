@@ -1,0 +1,47 @@
+sudo: false
+cache:
+  bundler: true
+  directories:
+  - cache/
+notifications:
+  email: false
+language: c
+compiler: gcc
+env:
+  global:
+    - PACKAGE=helloworld
+    - USER=leon0516
+    - REPO=openwrt-helloworld
+    - secure: "FkyJ8kdvYP5JucY3jh8iRLYymJaUkk3UySNeag2LKuExtgfjPVBrI/UlELDxbv/CxKYJJm9Ws/X6qfZjovCFdsQXEqZbmmnWtv4j7/CRVfolMqmIvqhhl/wMHdNj9QuXKZq5nIkgNDTXgFBWnRA7dDzF2QGmJBLfWQ+ZANgci7liEZtk61c5+cFrMqLuFhgUEXarwuAb4vrlB0F7dVC10NUuQCUC/wcHgrn1Z5bHIodS8NSXFPPLxUrIswdEVTvdjT5N4dSM3BndDO4ikpl4SRGdY4+0tmPFktYNvvoIfrAc+c8YsMB1l/n21LEYb1YR+Xxx6sCEp0PImX3od5k3wwwjr2MaDV99kZlKMZQ0+dN+d+dZCoJfJ1QAEU1PCuzwZq5NwfpRv1tlySlCWInzYlBziBjM89PfASAhcU2u9fRYlMJuLAOVP6Glr9f5rPoIVUQF8obLV5IKRvifPxm60uglFeZflOlEjirJiQbdAQMaBGEM+m4Gb3IhK9g9UlGc5qNQX+3HFY32a4dX5ykDfUhvcjKfvXoIA4A78aR5jEqKhAC8tZ3EpkSjOsbOsWVHpucQxAEa9NPVjbqzfmbxY4+Y7/3UNh91skOoYJo9J7N50EU3I98uSD100j9lxCNm22g7REKVwH/U0GFPL4p5cfQMtlAVrZ5rporsdWf6U10="
+  matrix:
+    - SDK_URL=https://downloads.openwrt.org/chaos_calmer/15.05/ar71xx/generic/OpenWrt-SDK-15.05-ar71xx-generic_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2
+    #- SDK_URL=https://downloads.openwrt.org/barrier_breaker/14.07/kirkwood/generic/OpenWrt-SDK-kirkwood-for-linux-x86_64-gcc-4.8-linaro_uClibc-0.9.33.2.tar.bz2
+    #- SDK_URL=https://downloads.openwrt.org/barrier_breaker/14.07/lantiq/xway/OpenWrt-SDK-lantiq-for-linux-x86_64-gcc-4.8-linaro_uClibc-0.9.33.2.tar.bz2
+    - SDK_URL=https://downloads.openwrt.org/chaos_calmer/15.05/ramips/mt7620/OpenWrt-SDK-15.05-ramips-mt7620_gcc-4.8-linaro_uClibc-0.9.33.2.Linux-x86_64.tar.bz2
+install:
+- mkdir -p $TRAVIS_BUILD_DIR/local ; cd $TRAVIS_BUILD_DIR/local
+- wget "http://us.archive.ubuntu.com/ubuntu/pool/main/c/ccache/ccache_3.1.6-1_amd64.deb"
+- dpkg -x *.deb .
+- mkdir -p $TRAVIS_BUILD_DIR/cache ; cd $TRAVIS_BUILD_DIR/cache
+- wget -c $SDK_URL
+- mkdir -p $TRAVIS_BUILD_DIR/sdk ; cd $TRAVIS_BUILD_DIR/sdk
+- export FILE=$TRAVIS_BUILD_DIR/cache/$(basename $SDK_URL)
+- file $FILE
+- tar xjf $FILE
+- cd $TRAVIS_BUILD_DIR/sdk/OpenWrt-SDK-*
+- mkdir package/$PACKAGE
+- ln -s $TRAVIS_BUILD_DIR/Makefile package/$PACKAGE/
+- ln -s $TRAVIS_BUILD_DIR/src package/$PACKAGE/
+script:
+- export PATH=$TRAVIS_BUILD_DIR/local/usr/bin:$PATH
+- cd $TRAVIS_BUILD_DIR/sdk/OpenWrt-SDK-*
+- ./scripts/feeds update packages >/dev/null
+#- ./scripts/feeds install libpthread 安装依赖或其他包
+- make V=s
+- find $TRAVIS_BUILD_DIR/sdk/OpenWrt-SDK-*/bin/
+- find . -name *.ipk -exec cp {} $TRAVIS_BUILD_DIR \;
+- cd $TRAVIS_BUILD_DIR/
+- chmod a+x $TRAVIS_BUILD_DIR/deploy.sh
+after_success: $TRAVIS_BUILD_DIR/deploy.sh
+before_deploy:
+  git fetch --tags
