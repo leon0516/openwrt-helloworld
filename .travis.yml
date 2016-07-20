@@ -45,3 +45,13 @@ script:
 after_success: $TRAVIS_BUILD_DIR/deploy.sh
 before_deploy:
   git fetch --tags
+deploy:
+  provider: releases
+  api_key:
+    secure: ${GITHUB-OAUTH}
+  skip_cleanup: true
+  file_glob: true
+  file: $TRAVIS_BUILD_DIR/*.ipk
+  on:
+    tags: true
+    all_branches: true
